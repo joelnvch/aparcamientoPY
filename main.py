@@ -87,6 +87,8 @@ def ciclo_autobus(autobus):
     cont = 0
 
     while True:
+        cont = cont + 1
+
         if primera_iteracion:
             primera_iteracion = False
             pos_posibles = entorno.casillas_sin_vehiculos([[0, 0], [0, DIMENSION_MATRIZ - 1],
@@ -106,24 +108,27 @@ def ciclo_autobus(autobus):
             rand_index = randint(0, len(pos_disp) - 1)
             entorno.insertar_elemento(autobus, pos_disp[rand_index])
 
-            cont = cont + 1
             # cada 3 movimientos habrá una parada
             if cont % 3 == 0:
                 list_clientes = autobus.realizar_parada(entorno)
+                autobus.parado = True
                 entorno.unlock_casillas(pos_bloqueadas)
+
                 print_lock.acquire()
-                print("Autobus movimiento: ID= ", autobus.id, "  POS= ", autobus.posicion, "  CLIENTES: ",
-                      autobus.obtener_clientes())
-                print("AUTOBUS PARADA: ID=", autobus.id, " POS=", autobus.posicion)
+                print("AUTOBUS se mueve y PARA: ID=", autobus.id, " POS=", autobus.posicion)
                 for cliente in list_clientes:
                     print("PASAJERO FUERA: ClienteID= ", cliente.id, "  AutobusDejado= ", autobus.id, "  Posicion= ",
                           cliente.posicion,
                           "  pasajero?: ", cliente.pasajero)
                 print_lock.release()
+
+                sleep(1)
+                autobus.parado = False
             else:
                 entorno.unlock_casillas(pos_bloqueadas)
                 imprimir(["Autobus movimiento: ID= ", autobus.id, "  POS= ", autobus.posicion, "  CLIENTES: ",
                           autobus.obtener_clientes()])
+
         sleep(2)
 
 
