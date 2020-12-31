@@ -11,7 +11,6 @@ class Cliente:
         self.destino = [randint(0, DIMENSION_MATRIZ - 1), randint(0, DIMENSION_MATRIZ - 1)]
         self.posicion = []
         self.pasajero = False
-        self.acaba_salir_de_autobus = False
 
 
 class Taxi:
@@ -66,6 +65,7 @@ class Autobus:
         self.id = id
         self.clientes = []
         self.posicion = []
+        self.parado = False
 
     def realizar_parada(self, entorno):
         lista_clientes_fuera = []
@@ -74,7 +74,6 @@ class Autobus:
             if rand == 0:
                 self.clientes.remove(cliente)
                 cliente.pasajero = False
-                cliente.acaba_salir_de_autobus = True
                 entorno.matriz[cliente.posicion[0]][cliente.posicion[1]].clientes.append(cliente)
                 lista_clientes_fuera.append(cliente)
         return lista_clientes_fuera
@@ -109,10 +108,11 @@ class Entorno:
             pass
         elif isinstance(elemento, Cliente):
             # borramos el valor antiguo de la casilla que hemos dejado
-            if pos_antigua and not elemento.acaba_salir_de_autobus:
+
+            # WARNING: probablemente no necesario acaba_salir_autobus
+            if pos_antigua:
                 self.matriz[pos_antigua[0]][pos_antigua[1]].clientes.remove(elemento)
 
-            elemento.acaba_salir_de_autobus = False
             if casilla_dest.vehiculo is None:
                 casilla_dest.clientes.append(elemento)
                 elemento.posicion = pos_nueva
@@ -135,9 +135,12 @@ class Entorno:
                         casilla_dest.clientes.append(elemento)
 
                 elif isinstance(vehiculo, Autobus):
-                    vehiculo.clientes.append(elemento)
-                    elemento.pasajero = True
-                    return ["autobus", vehiculo.id]
+                    if vehiculo.parado:
+                        vehiculo.clientes.append(elemento)
+                        elemento.pasajero = True
+                        return ["autobus", vehiculo.id]
+                    else:
+                        casilla_dest.clientes.append(elemento)
 
         # si es un vehiculo
         else:
