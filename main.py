@@ -3,12 +3,16 @@ from random import randint
 from time import sleep
 import numpy as np
 from threading import *
+import sys
 
 entorno = Entorno()
 n_clientes = 0
 print_lock = Lock()
 nclientes_lock = Lock()
 threads = []
+
+autobus_gana = False
+taxi_gana = False
 
 
 def imprimir(string):
@@ -89,6 +93,10 @@ def ciclo_autobus(autobus):
     while True:
         cont = cont + 1
 
+        if len(autobus.clientes) == 4:
+            global autobus_gana
+            autobus_gana = True
+
         if primera_iteracion:
             primera_iteracion = False
             pos_posibles = entorno.casillas_sin_vehiculos([[0, 0], [0, DIMENSION_MATRIZ - 1],
@@ -135,8 +143,13 @@ def ciclo_autobus(autobus):
 def ciclo_taxi(taxi):
     global entorno
     primera_iteracion = True
+    n_clientes_transportados = 0
 
     while True:
+        if n_clientes_transportados == 2:
+            global taxi_gana
+            taxi_gana = True
+
         # Ponerlo en la matriz
         if primera_iteracion:
             primera_iteracion = False
@@ -169,6 +182,7 @@ def ciclo_taxi(taxi):
             if code[0] == "paradaTaxi":
                 print("Taxi movimiento: ID= ", taxi.id, " POS=", taxi.posicion, " CLIENTEisNone= [", taxi.cliente is None, "}")
                 print("TAXI PARADA: ID= ", taxi.id, " POS=", taxi.posicion, " {Cliente ", code[1], " se baja}")
+                n_clientes_transportados = n_clientes_transportados + 1
             else:
                 print("Taxi movimiento: ID= ", taxi.id, " POS=", taxi.posicion, " CLIENTEisNone= [", taxi.cliente is None, "}")
             print_lock.release()
@@ -201,8 +215,18 @@ if __name__ == "__main__":
             targ = ciclo_taxi
 
         t = Thread(target=targ, args=(elemento,))
+        t.daemon = True
         t.start()
         threads.append(t)
 
-    for t in threads:
-        t.join()
+    while True:
+        if autobus_gana:
+            print_lock.acquire()
+            print("AUTOBUS GANA")
+            sys.exit()
+        elif taxi_gana:
+            print_lock.acquire()
+            print("TAXI GANA")
+            sys.exit()
+
+
