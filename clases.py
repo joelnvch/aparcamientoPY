@@ -157,7 +157,7 @@ class Entorno:
             # si el destino no es el mismo y hay un vehiculo dentro da error
             # esta planteado de forma que a este metodo solo le puedan llegar valores validos
             elif casilla_dest.vehiculo is not None:
-                raise Exception("Vehiculo error en pos ", pos_nueva, "id del vehiculo ", elemento.id)
+                raise Exception("Un vehiculo ha intentado entrar en una casilla con otro")
 
             # borramos el valor antiguo de la casilla que hemos dejado
             if pos_antigua:
