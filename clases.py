@@ -70,7 +70,8 @@ class Autobus:
     def realizar_parada(self, entorno):
         lista_clientes_fuera = []
         for cliente in self.clientes:
-            rand = randint(0, 1)
+            rand = randint(0, 2)
+            # hacemos que sea menos probable que se baje un cliente
             if rand == 0:
                 self.clientes.remove(cliente)
                 cliente.pasajero = False
@@ -122,14 +123,20 @@ class Entorno:
                 # -arreglado falta pruebas
                 vehiculo = casilla_dest.vehiculo
                 elemento.posicion = pos_nueva
+
+                # nuevo: contemplar que si cae en destino se queda en destino haya o no un coche
+                if elemento.destino == pos_nueva:
+                    casilla_dest.clientes.append(elemento)
+                    return [""]
+
                 # error#2: hay un caso en el que entra por aqui pero no entra en los ifs
                 # solo se hacen las tres lineas de atras
-                # - arreglado falta pruebas
-                if isinstance(vehiculo, Taxi):
+                # - arreglado falta pruebas ----
+                elif isinstance(vehiculo, Taxi):
                     if vehiculo.cliente is None:
                         elemento.pasajero = True
                         vehiculo.cliente = elemento
-                        return ["taxi", vehiculo.id]
+                        return ["taxi", vehiculo.id, vehiculo.posicion, vehiculo.cliente is None]
                     else:  # si el taxi tiene un cliente
                         # ponerlo en la casilla
                         casilla_dest.clientes.append(elemento)
@@ -138,7 +145,7 @@ class Entorno:
                     if vehiculo.parado:
                         vehiculo.clientes.append(elemento)
                         elemento.pasajero = True
-                        return ["autobus", vehiculo.id]
+                        return ["autobus", vehiculo.id, vehiculo.posicion, vehiculo.parado]
                     else:
                         casilla_dest.clientes.append(elemento)
 
