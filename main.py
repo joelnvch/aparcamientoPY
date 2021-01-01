@@ -53,7 +53,8 @@ def ciclo_cliente(cliente_inic):
                 print("Colocacion cliente: ID=", cliente.id, " POS=", cliente.posicion, " PASAJERO?=", cliente.pasajero,
                       " OBJETO=", cliente)
             else:
-                print("Cliente Movimiento: ID=", cliente.id, " POS= ", cliente.posicion, " PASAJERO?=", cliente.pasajero)
+                print("Cliente Movimiento: ID=", cliente.id, " POS= ", cliente.posicion, " PASAJERO?=",
+                      cliente.pasajero)
             primera_iteracion = False
 
             if estado[0] == "taxi":
@@ -71,7 +72,7 @@ def ciclo_cliente(cliente_inic):
             print_lock.release()
 
             # cuadno cliente montado en vehiculo
-            while cliente.pasajero or entorno.matriz[cliente.posicion[0]][cliente.posicion[1]].estado.locked():
+            while cliente.pasajero:
                 pass
 
             if cliente.posicion == cliente.destino:
@@ -99,10 +100,22 @@ def ciclo_autobus(autobus):
 
         if primera_iteracion:
             primera_iteracion = False
-            pos_posibles = entorno.casillas_sin_vehiculos([[0, 0], [0, DIMENSION_MATRIZ - 1],
-                                                           [DIMENSION_MATRIZ - 1, 0],
-                                                           [DIMENSION_MATRIZ - 1, DIMENSION_MATRIZ - 1]], False)
-            pos_bloqueadas = pos_posibles[randint(0, len(pos_posibles) - 1)]
+
+            ##
+            pos_bloqueadas = None
+            while pos_bloqueadas is None:
+                try:
+                    pos_posibles = entorno.casillas_sin_vehiculos([[0, 0], [0, DIMENSION_MATRIZ - 1],
+                                                                   [DIMENSION_MATRIZ - 1, 0],
+                                                                   [DIMENSION_MATRIZ - 1, DIMENSION_MATRIZ - 1]], False)
+                    if len(pos_posibles) == 1:
+                        pos_bloqueadas = pos_posibles[0]
+                    else:
+                        pos_bloqueadas = pos_posibles[randint(0, len(pos_posibles) - 1)]
+                except ValueError:
+                    pass
+            ##
+
             while entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].vehiculo is not None:
                 pass
             entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.acquire()
@@ -146,7 +159,7 @@ def ciclo_taxi(taxi):
     n_clientes_transportados = 0
 
     while True:
-        if n_clientes_transportados == 2:
+        if n_clientes_transportados == 5:
             global taxi_gana
             taxi_gana = True
 
@@ -159,7 +172,8 @@ def ciclo_taxi(taxi):
             entorno.matriz[pos[0]][pos[1]].estado.acquire()
             entorno.insertar_elemento(taxi, pos)
             entorno.matriz[pos[0]][pos[1]].estado.release()
-            imprimir(["Colocacion Taxi: ID= ", taxi.id, "  POS= ", taxi.posicion, "  CLIENTEisNone?= ", taxi.cliente is None])
+            imprimir(["Colocacion Taxi: ID= ", taxi.id, "  POS= ", taxi.posicion, "  CLIENTEisNone?= ",
+                      taxi.cliente is None])
         else:
             pos_bloqueadas = entorno.lock_alrededor(taxi.posicion)
             pos_disp = entorno.casillas_sin_vehiculos(pos_bloqueadas)
@@ -180,11 +194,13 @@ def ciclo_taxi(taxi):
 
             print_lock.acquire()
             if code[0] == "paradaTaxi":
-                print("Taxi movimiento: ID= ", taxi.id, " POS=", taxi.posicion, " CLIENTEisNone= [", taxi.cliente is None, "}")
+                print("Taxi movimiento: ID= ", taxi.id, " POS=", taxi.posicion, " CLIENTEisNone= [",
+                      taxi.cliente is None, "}")
                 print("TAXI PARADA: ID= ", taxi.id, " POS=", taxi.posicion, " {Cliente ", code[1], " se baja}")
                 n_clientes_transportados = n_clientes_transportados + 1
             else:
-                print("Taxi movimiento: ID= ", taxi.id, " POS=", taxi.posicion, " CLIENTEisNone= [", taxi.cliente is None, "}")
+                print("Taxi movimiento: ID= ", taxi.id, " POS=", taxi.posicion, " CLIENTEisNone= [",
+                      taxi.cliente is None, "}")
             print_lock.release()
         sleep(1)
 
@@ -228,5 +244,3 @@ if __name__ == "__main__":
             print_lock.acquire()
             print("TAXI GANA")
             sys.exit()
-
-
