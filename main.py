@@ -72,14 +72,18 @@ def ciclo_cliente(cliente_inic):
             print_lock.release()
 
             # cuadno cliente montado en vehiculo
-            while cliente.pasajero:
+            while cliente.pasajero or entorno.matriz[cliente.posicion[0]][cliente.posicion[1]].estado.locked:
                 pass
 
             if cliente.posicion == cliente.destino:
-                imprimir(["EXITO Cliente: ID=", cliente.id, " DEST=", cliente.destino])
+                imprimir(["EXITO Cliente: ID=", cliente.id, " DEST=", cliente.destino, " ", threading.get_ident()])
                 # en este caso la casilla destino puede contener o no el cliente ya que el taxi no deja al cliente en la casilla
                 # solo actualiza su posicion en el objeto, un autobus deja al cliente en la casilla en todo caso
-                entorno.matriz[cliente.destino[0]][cliente.destino[1]].clientes.remove(cliente)
+                try:
+                    entorno.matriz[cliente.destino[0]][cliente.destino[1]].clientes.remove(cliente)
+                except ValueError:
+                    raise Exception("Error en ", threading.get_ident())
+
                 cliente_inic_termina = True
                 break
 
