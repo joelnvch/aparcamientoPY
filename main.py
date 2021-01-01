@@ -114,7 +114,7 @@ def ciclo_autobus(autobus):
                         pass
                     entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.acquire()
                     entorno.insertar_elemento(autobus, pos_bloqueadas)
-                except Exception:
+                except VehiculoException:
                     entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.release()
                     pos_posibles = None
 
@@ -173,7 +173,7 @@ def ciclo_taxi(taxi):
                         pass
                     entorno.matriz[pos[0]][pos[1]].estado.acquire()
                     entorno.insertar_elemento(taxi, pos)
-                except Exception:
+                except VehiculoException:
                     entorno.matriz[pos[0]][pos[1]].estado.release()
                     pos = None
 

@@ -5,6 +5,11 @@ import numpy
 DIMENSION_MATRIZ = 4
 
 
+class VehiculoException(Exception):
+    def __init__(self, msg):
+        super().__init__(msg)
+
+
 class Cliente:
     def __init__(self, id):
         self.id = id
@@ -157,7 +162,7 @@ class Entorno:
             # si el destino no es el mismo y hay un vehiculo dentro da error
             # esta planteado de forma que a este metodo solo le puedan llegar valores validos
             elif casilla_dest.vehiculo is not None:
-                raise Exception("Un vehiculo ha intentado entrar en una casilla con otro")
+                raise VehiculoException("Un vehiculo ha intentado entrar en una casilla con otro")
 
             # borramos el valor antiguo de la casilla que hemos dejado
             if pos_antigua:
