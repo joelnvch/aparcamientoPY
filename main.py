@@ -142,7 +142,7 @@ def ciclo_autobus(autobus):
 
                 entorno.unlock_casillas(pos_bloqueadas)
 
-                sleep(2.5)
+                sleep(1.5)
                 autobus.parado = False
             else:
                 entorno.unlock_casillas(pos_bloqueadas)
