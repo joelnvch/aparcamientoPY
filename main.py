@@ -72,7 +72,7 @@ def ciclo_cliente(cliente_inic):
             print_lock.release()
 
             # cuadno cliente montado en vehiculo
-            while cliente.pasajero:
+            while cliente.pasajero or entorno.matriz[cliente.posicion[0]][cliente.posicion[1]].estado.locked() :
                 pass
 
             if cliente.posicion == cliente.destino:
@@ -105,25 +105,19 @@ def ciclo_autobus(autobus):
         if primera_iteracion:
             primera_iteracion = False
 
-            ##
-            pos_bloqueadas = None
-            while pos_bloqueadas is None:
+            pos_posibles = None
+            while pos_posibles is None:
                 try:
-                    pos_posibles = entorno.casillas_sin_vehiculos([[0, 0], [0, DIMENSION_MATRIZ - 1],
-                                                                   [DIMENSION_MATRIZ - 1, 0],
-                                                                   [DIMENSION_MATRIZ - 1, DIMENSION_MATRIZ - 1]], False)
-                    if len(pos_posibles) == 1:
-                        pos_bloqueadas = pos_posibles[0]
-                    else:
-                        pos_bloqueadas = pos_posibles[randint(0, len(pos_posibles) - 1)]
-                except ValueError:
-                    pass
-            ##
+                    pos_posibles = [[0, 0], [0, DIMENSION_MATRIZ - 1], [DIMENSION_MATRIZ - 1, 0], [DIMENSION_MATRIZ - 1, DIMENSION_MATRIZ - 1]]
+                    pos_bloqueadas = pos_posibles[randint(0, 3)]
+                    while entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].vehiculo is not None:
+                        pass
+                    entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.acquire()
+                    entorno.insertar_elemento(autobus, pos_bloqueadas)
+                except VehiculoException:
+                    entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.release()
+                    pos_posibles = None
 
-            while entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].vehiculo is not None:
-                pass
-            entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.acquire()
-            entorno.insertar_elemento(autobus, pos_bloqueadas)
             entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.release()
             imprimir(["Colocacion autobus: ID= ", autobus.id, "  POS= ", autobus.posicion, " CLIENTES= ",
                       autobus.obtener_clientes(), "cont=", cont])
@@ -148,7 +142,7 @@ def ciclo_autobus(autobus):
 
                 entorno.unlock_casillas(pos_bloqueadas)
 
-                sleep(2.5)
+                sleep(1.5)
                 autobus.parado = False
             else:
                 entorno.unlock_casillas(pos_bloqueadas)
@@ -170,11 +164,19 @@ def ciclo_taxi(taxi):
         # Ponerlo en la matriz
         if primera_iteracion:
             primera_iteracion = False
-            pos = [randint(0, DIMENSION_MATRIZ - 1), randint(0, DIMENSION_MATRIZ - 1)]
-            while entorno.matriz[pos[0]][pos[1]].vehiculo is not None:
-                pass
-            entorno.matriz[pos[0]][pos[1]].estado.acquire()
-            entorno.insertar_elemento(taxi, pos)
+
+            pos = None
+            while pos is None:
+                try:
+                    pos = [randint(0, DIMENSION_MATRIZ - 1), randint(0, DIMENSION_MATRIZ - 1)]
+                    while entorno.matriz[pos[0]][pos[1]].vehiculo is not None:
+                        pass
+                    entorno.matriz[pos[0]][pos[1]].estado.acquire()
+                    entorno.insertar_elemento(taxi, pos)
+                except VehiculoException:
+                    entorno.matriz[pos[0]][pos[1]].estado.release()
+                    pos = None
+
             imprimir(["Colocacion Taxi: ID= ", taxi.id, "  POS= ", taxi.posicion, "  CLIENTEisNone?= ",
                       taxi.cliente is None])
             entorno.matriz[pos[0]][pos[1]].estado.release()
