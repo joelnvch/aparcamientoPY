@@ -52,9 +52,6 @@ def ciclo_cliente(cliente_inic):
             if primera_iteracion:
                 print("Colocacion cliente: ID=", cliente.id, " POS=", cliente.posicion, " PASAJERO?=", cliente.pasajero,
                       " OBJETO=", cliente)
-            else:
-                print("Cliente Movimiento: ID=", cliente.id, " POS= ", cliente.posicion, " PASAJERO?=",
-                      cliente.pasajero)
             primera_iteracion = False
 
             if estado[0] == "taxi":
@@ -77,12 +74,7 @@ def ciclo_cliente(cliente_inic):
 
             if cliente.posicion == cliente.destino:
                 imprimir(["EXITO Cliente: ID=", cliente.id, " DEST=", cliente.destino, " ", threading.get_ident()])
-                # en este caso la casilla destino puede contener o no el cliente ya que el taxi no deja al cliente en la casilla
-                # solo actualiza su posicion en el objeto, un autobus deja al cliente en la casilla en todo caso
-                try:
-                    entorno.matriz[cliente.destino[0]][cliente.destino[1]].clientes.remove(cliente)
-                except ValueError:
-                    raise Exception("Error en ", threading.get_ident())
+                entorno.matriz[cliente.destino[0]][cliente.destino[1]].clientes.remove(cliente)
 
                 cliente_inic_termina = True
                 break
@@ -146,8 +138,6 @@ def ciclo_autobus(autobus):
                 autobus.parado = False
             else:
                 entorno.unlock_casillas(pos_bloqueadas)
-                imprimir(["Autobus movimiento: ID= ", autobus.id, "  POS= ", autobus.posicion, "  CLIENTES: ",
-                          autobus.obtener_clientes(), "cont=", cont])
                 sleep(2)
 
 
@@ -188,8 +178,6 @@ def ciclo_taxi(taxi):
             if taxi.cliente is None:
                 if len(pos_disp) == 1:
                     rand_index = 0
-                if len(pos_disp) <= 0:
-                    raise Exception("problema con casillas_sin_vehiculos o lock_alrededor")
                 else:
                     rand_index = randint(0, len(pos_disp) - 1)
                 code = entorno.insertar_elemento(taxi, pos_disp[rand_index])
@@ -203,9 +191,6 @@ def ciclo_taxi(taxi):
                       taxi.cliente is None, "}")
                 print("TAXI PARADA: ID= ", taxi.id, " POS=", taxi.posicion, " {Cliente ", code[1], " se baja}")
                 n_clientes_transportados = n_clientes_transportados + 1
-            else:
-                print("Taxi movimiento: ID= ", taxi.id, " POS=", taxi.posicion, " CLIENTEisNone= [",
-                      taxi.cliente is None, "}")
             print_lock.release()
 
             entorno.unlock_casillas(pos_bloqueadas)
