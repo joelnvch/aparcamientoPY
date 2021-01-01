@@ -72,7 +72,7 @@ def ciclo_cliente(cliente_inic):
             print_lock.release()
 
             # cuadno cliente montado en vehiculo
-            while cliente.pasajero or entorno.matriz[cliente.posicion[0]][cliente.posicion[1]].estado.locked:
+            while cliente.pasajero:
                 pass
 
             if cliente.posicion == cliente.destino:

@@ -127,6 +127,7 @@ class Entorno:
                 # nuevo: contemplar que si cae en destino se queda en destino haya o no un coche
                 if elemento.destino == pos_nueva:
                     casilla_dest.clientes.append(elemento)
+                    return [""]
 
                 # error#2: hay un caso en el que entra por aqui pero no entra en los ifs
                 # solo se hacen las tres lineas de atras
