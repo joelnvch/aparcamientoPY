@@ -136,7 +136,7 @@ class Entorno:
                     if vehiculo.cliente is None:
                         elemento.pasajero = True
                         vehiculo.cliente = elemento
-                        return ["taxi", vehiculo.id]
+                        return ["taxi", vehiculo.id, vehiculo.posicion, vehiculo.cliente is None]
                     else:  # si el taxi tiene un cliente
                         # ponerlo en la casilla
                         casilla_dest.clientes.append(elemento)
@@ -145,7 +145,7 @@ class Entorno:
                     if vehiculo.parado:
                         vehiculo.clientes.append(elemento)
                         elemento.pasajero = True
-                        return ["autobus", vehiculo.id]
+                        return ["autobus", vehiculo.id, vehiculo.posicion, vehiculo.parado]
                     else:
                         casilla_dest.clientes.append(elemento)
 

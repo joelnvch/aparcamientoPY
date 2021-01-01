@@ -58,9 +58,9 @@ def ciclo_cliente(cliente_inic):
             primera_iteracion = False
 
             if estado[0] == "taxi":
-                print("CLIENTE MONTADO: ID=", cliente.id, " POS=", cliente.posicion, " TAXIID=", estado[1])
+                print("CLIENTE MONTADO: ID=", cliente.id, " POS=", cliente.posicion, " TAXIID=", estado[1], " TAXIPOS=", estado[2], "TAXICisNone=", estado[3])
             elif estado[0] == "autobus":
-                print("CLIENTE MONTADO: ID=", cliente.id, " POS=", cliente.posicion, " AUTOBUSID=", estado[1])
+                print("CLIENTE MONTADO: ID=", cliente.id, " POS=", cliente.posicion, " AUTOBUSID=", estado[1], "AUTOBUSPOS=", estado[2], "AUTOBUSPARADO=", estado[3])
             elif cliente.posicion == cliente.destino:
                 print("EXITO Cliente: ID=", cliente.id, " DEST=", cliente.destino, " {Cliente llega destino}")
                 print_lock.release()
@@ -126,7 +126,7 @@ def ciclo_autobus(autobus):
             entorno.insertar_elemento(autobus, pos_bloqueadas)
             entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.release()
             imprimir(["Colocacion autobus: ID= ", autobus.id, "  POS= ", autobus.posicion, " CLIENTES= ",
-                      autobus.obtener_clientes()])
+                      autobus.obtener_clientes(), "cont=", cont])
         else:
             pos_bloqueadas = entorno.lock_alrededor(autobus.posicion)
             pos_disp = entorno.casillas_sin_vehiculos(pos_bloqueadas)
@@ -137,24 +137,24 @@ def ciclo_autobus(autobus):
             if cont % 3 == 0:
                 list_clientes = autobus.realizar_parada(entorno)
                 autobus.parado = True
-                entorno.unlock_casillas(pos_bloqueadas)
 
                 print_lock.acquire()
-                print("AUTOBUS se mueve y PARA: ID=", autobus.id, " POS=", autobus.posicion)
+                print("AUTOBUS se mueve y PARA: ID=", autobus.id, " POS=", autobus.posicion, "cont?",cont)
                 for cliente in list_clientes:
                     print("PASAJERO FUERA: ClienteID= ", cliente.id, "  AutobusDejado= ", autobus.id, "  Posicion= ",
                           cliente.posicion,
                           "  pasajero?: ", cliente.pasajero)
                 print_lock.release()
 
-                sleep(1)
+                entorno.unlock_casillas(pos_bloqueadas)
+
+                sleep(2.5)
                 autobus.parado = False
             else:
                 entorno.unlock_casillas(pos_bloqueadas)
                 imprimir(["Autobus movimiento: ID= ", autobus.id, "  POS= ", autobus.posicion, "  CLIENTES: ",
-                          autobus.obtener_clientes()])
-
-        sleep(2)
+                          autobus.obtener_clientes(), "cont=", cont])
+                sleep(2)
 
 
 def ciclo_taxi(taxi):
@@ -175,9 +175,10 @@ def ciclo_taxi(taxi):
                 pass
             entorno.matriz[pos[0]][pos[1]].estado.acquire()
             entorno.insertar_elemento(taxi, pos)
-            entorno.matriz[pos[0]][pos[1]].estado.release()
             imprimir(["Colocacion Taxi: ID= ", taxi.id, "  POS= ", taxi.posicion, "  CLIENTEisNone?= ",
                       taxi.cliente is None])
+            entorno.matriz[pos[0]][pos[1]].estado.release()
+
         else:
             pos_bloqueadas = entorno.lock_alrededor(taxi.posicion)
             pos_disp = entorno.casillas_sin_vehiculos(pos_bloqueadas)
@@ -194,8 +195,6 @@ def ciclo_taxi(taxi):
                 pos = taxi.decidir_mov(pos_disp, entorno)
                 code = entorno.insertar_elemento(taxi, pos)
 
-            entorno.unlock_casillas(pos_bloqueadas)
-
             print_lock.acquire()
             if code[0] == "paradaTaxi":
                 print("Taxi movimiento: ID= ", taxi.id, " POS=", taxi.posicion, " CLIENTEisNone= [",
@@ -206,6 +205,9 @@ def ciclo_taxi(taxi):
                 print("Taxi movimiento: ID= ", taxi.id, " POS=", taxi.posicion, " CLIENTEisNone= [",
                       taxi.cliente is None, "}")
             print_lock.release()
+
+            entorno.unlock_casillas(pos_bloqueadas)
+
         sleep(1)
 
 
