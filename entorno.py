@@ -36,7 +36,7 @@ class Entorno:
                     if vehiculo.cliente is None:
                         elemento.pasajero = True
                         vehiculo.cliente = elemento
-                        return ["taxi", vehiculo.id, vehiculo.posicion, vehiculo.cliente is None]
+                        return ["taxi", vehiculo.id, vehiculo.posicion, vehiculo.get_cliente()]
                     else:
                         casilla_dest.clientes.append(elemento)
                 elif isinstance(vehiculo, Autobus):

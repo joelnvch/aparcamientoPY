@@ -24,6 +24,12 @@ class Taxi:
         self.cliente = None
         self.posicion = []
 
+    def get_cliente(self):
+        if self.cliente is None:
+            return "-"
+        else:
+            return self.cliente.id
+
     def decidir_mov(self, lista_pos, entorno):
         direccion_columna = self.cliente.destino[1] - self.posicion[1]
         direccion_fila = self.cliente.destino[0] - self.posicion[0]

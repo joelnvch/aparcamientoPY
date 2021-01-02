@@ -5,6 +5,8 @@ from threading import *
 from entorno import Entorno
 import sys
 
+N_AUTOBUS_GANA = 4      # clientes necesarios para que
+N_TAXI_GANA = 5         #      gane uno u otro
 
 entorno = Entorno()
 n_clientes = 0
@@ -41,16 +43,16 @@ def ciclo_cliente(cliente_inic):
                 pos_disp = [randint(0, DIMENSION_MATRIZ - 1), randint(0, DIMENSION_MATRIZ - 1)]
                 entorno.matriz[pos_disp[0]][pos_disp[1]].estado.acquire()
                 estado = entorno.insertar_elemento(cliente, pos_disp)
-                imprimir(["Colocacion cliente: ID=", cliente.id, " POS=", cliente.posicion, " PASAJERO?=", cliente.pasajero, " OBJETO=", cliente])
+                imprimir(["Colocacion cliente: ID=", cliente.id, " POS=", cliente.posicion, " PASAJERO?=", cliente.pasajero])
             else:
                 pos_disp = entorno.lock_alrededor(cliente.posicion)
                 rand_index = randint(0, len(pos_disp) - 1)
                 estado = entorno.insertar_elemento(cliente, pos_disp[rand_index])
 
             if estado[0] == "taxi":
-                imprimir(["CLIENTE MONTADO: ID=", cliente.id, " POS=", cliente.posicion, " TAXIID=", estado[1], " TAXIPOS=", estado[2], "TAXICisNone=", estado[3]])
+                imprimir(["CLIENTE MONTADO: ID=", cliente.id, " POS=", cliente.posicion, " TAXIID=", estado[1], " TAXIPOS=", estado[2], " TAXIClienteID=", estado[3]])
             elif estado[0] == "autobus":
-                imprimir(["CLIENTE MONTADO: ID=", cliente.id, " POS=", cliente.posicion, " AUTOBUSID=", estado[1], "AUTOBUSPOS=", estado[2], "AUTOBUSPARADO=", estado[3]])
+                imprimir(["CLIENTE MONTADO: ID=", cliente.id, " POS=", cliente.posicion, " AUTOBUSID=", estado[1], " AUTOBUSPOS= ", estado[2], " AUTOBUSPARADO= ", estado[3]])
 
             if primera_iteracion:
                 entorno.matriz[pos_disp[0]][pos_disp[1]].estado.release()
@@ -78,7 +80,7 @@ def ciclo_autobus(autobus):
     while True:
         cont = cont + 1
 
-        if len(autobus.clientes) == 4:
+        if len(autobus.clientes) == N_AUTOBUS_GANA:
             global autobus_gana
             autobus_gana = True
 
@@ -137,7 +139,7 @@ def ciclo_taxi(taxi):
     n_clientes_transportados = 0
 
     while True:
-        if n_clientes_transportados == 5:
+        if n_clientes_transportados == N_TAXI_GANA:
             global taxi_gana
             taxi_gana = True
 
@@ -177,9 +179,7 @@ def ciclo_taxi(taxi):
 
             print_lock.acquire()
             if code[0] == "paradaTaxi":
-                print("Taxi movimiento: ID= ", taxi.id, " POS=", taxi.posicion, " CLIENTEisNone= [",
-                      taxi.cliente is None, "}")
-                print("TAXI PARADA: ID= ", taxi.id, " POS=", taxi.posicion, " {Cliente ", code[1], " se baja}")
+                print("TAXI se mueve y PARA: ID= ", taxi.id, " POS=", taxi.posicion, " {Cliente ", code[1], " se baja}")
                 n_clientes_transportados = n_clientes_transportados + 1
             print_lock.release()
 
