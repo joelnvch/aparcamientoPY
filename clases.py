@@ -27,21 +27,18 @@ class Taxi:
     def decidir_mov(self, lista_pos, entorno):
         if self.cliente is None:
             raise Exception("Taxi error no deberia estar aqui")
+
         direccion_columna = self.cliente.destino[1] - self.posicion[1]
         direccion_fila = self.cliente.destino[0] - self.posicion[0]
         pos_resultado = []
 
         if (abs(direccion_fila) == 1 or abs(direccion_fila) == 0) and (
                 abs(direccion_columna) == 1 or abs(direccion_columna) == 0):
-            # aqui devolvemos la posicion destino siempre que este en el rango pero
-            # puede ser que aunque este en el rango justo nos coincida que
-            # esta ocupado justo en ese momento por otro vehiculo
-            # -arreglar error vahiculoerror
             if entorno.matriz[self.cliente.destino[0]][self.cliente.destino[1]].vehiculo is None:
                 pos_resultado = self.cliente.destino
+                self.cliente.pasajero = False
             else:
                 pos_resultado = self.posicion
-
         else:
             pos_resultado = lista_pos[0]
             dist_columna = self.cliente.destino[0] - pos_resultado[0]
@@ -55,9 +52,6 @@ class Taxi:
                 if dist_destino_aux < dist_destino:
                     pos_resultado = posicion
                     dist_destino = dist_destino_aux
-
-        if pos_resultado == self.cliente.destino:
-            self.cliente.pasajero = False
 
         if not pos_resultado:
             raise Exception('decidir mov error.')
@@ -74,14 +68,15 @@ class Autobus:
 
     def realizar_parada(self, entorno):
         lista_clientes_fuera = []
+
         for cliente in self.clientes:
             rand = randint(0, 2)
-            # hacemos que sea menos probable que se baje un cliente
             if rand == 0:
                 self.clientes.remove(cliente)
                 cliente.pasajero = False
                 entorno.matriz[cliente.posicion[0]][cliente.posicion[1]].clientes.append(cliente)
                 lista_clientes_fuera.append(cliente)
+
         return lista_clientes_fuera
 
     def obtener_clientes(self):
@@ -112,10 +107,8 @@ class Entorno:
 
         if pos_nueva == pos_antigua:
             pass
-        elif isinstance(elemento, Cliente):
-            # borramos el valor antiguo de la casilla que hemos dejado
 
-            # WARNING: probablemente no necesario acaba_salir_autobus
+        elif isinstance(elemento, Cliente):
             if pos_antigua:
                 self.matriz[pos_antigua[0]][pos_antigua[1]].clientes.remove(elemento)
 
@@ -124,28 +117,19 @@ class Entorno:
                 elemento.posicion = pos_nueva
             # si entra en vehiculo
             else:
-                # no estoy contemplando que el vehiculo encontrado si es un taxi tengo alguien dentro
-                # -arreglado falta pruebas
                 vehiculo = casilla_dest.vehiculo
                 elemento.posicion = pos_nueva
 
-                # nuevo: contemplar que si cae en destino se queda en destino haya o no un coche
                 if elemento.destino == pos_nueva:
                     casilla_dest.clientes.append(elemento)
                     return [""]
-
-                # error#2: hay un caso en el que entra por aqui pero no entra en los ifs
-                # solo se hacen las tres lineas de atras
-                # - arreglado falta pruebas ----
                 elif isinstance(vehiculo, Taxi):
                     if vehiculo.cliente is None:
                         elemento.pasajero = True
                         vehiculo.cliente = elemento
                         return ["taxi", vehiculo.id, vehiculo.posicion, vehiculo.cliente is None]
-                    else:  # si el taxi tiene un cliente
-                        # ponerlo en la casilla
+                    else:
                         casilla_dest.clientes.append(elemento)
-
                 elif isinstance(vehiculo, Autobus):
                     if vehiculo.parado:
                         vehiculo.clientes.append(elemento)
@@ -156,20 +140,15 @@ class Entorno:
 
         # si es un vehiculo
         else:
-            # tal y como esta diseñado si el valor es un vehiculo es porque es él mismo por lo tanto no hacemos nada
             if casilla_dest.vehiculo == elemento:
                 return [""]
-            # si el destino no es el mismo y hay un vehiculo dentro da error
-            # esta planteado de forma que a este metodo solo le puedan llegar valores validos
             elif casilla_dest.vehiculo is not None:
                 raise VehiculoException("Un vehiculo ha intentado entrar en una casilla con otro")
 
-            # borramos el valor antiguo de la casilla que hemos dejado
             if pos_antigua:
                 self.matriz[pos_antigua[0]][pos_antigua[1]].vehiculo = None
 
             if casilla_dest.vehiculo is None:
-                # movemos vehiculo
                 casilla_dest.vehiculo = elemento
                 elemento.posicion = pos_nueva
                 if isinstance(elemento, Autobus):
@@ -179,17 +158,14 @@ class Entorno:
                     if elemento.cliente is not None:
                         elemento.cliente.posicion = pos_nueva
                         if elemento.cliente.posicion == elemento.cliente.destino:
-                            # el equivalente a salir del coche y dejarle en la casilla
                             id_cl = elemento.cliente.id
                             self.matriz[elemento.cliente.destino[0]][elemento.cliente.destino[1]].clientes.append(
                                 elemento.cliente)
                             elemento.cliente = None
                             return ["paradaTaxi", id_cl]
-
         return [""]
 
-    # priv
-    def casillas_contiguas(self, pos):
+    def __casillas_contiguas(self, pos):
         res = []
         for i in range(pos[0] - 1, pos[0] + 2):
             if 0 <= i <= DIMENSION_MATRIZ - 1:
@@ -203,31 +179,22 @@ class Entorno:
     def lock_alrededor(self, pos):
         casilla_actual = self.matriz[pos[0]][pos[1]]
         posiciones_bloqueadas = []
-        # no comienza hasta que no puede bloquear su posicion actual
-        while casilla_actual.estado.locked():
-            pass
-        casilla_actual.estado.acquire()
+        casilla_actual.estado.acquire()     # no empezamos hasta que su posición no este bloqueada
         posiciones_bloqueadas.append(casilla_actual.id)
-
-        for casilla in self.casillas_contiguas(pos):
+        for casilla in self.__casillas_contiguas(pos):
             if not casilla.estado.locked():
                 casilla.estado.acquire()
                 posiciones_bloqueadas.append(casilla.id)
-        # el primer elemento de esta lista será siempre la casilla actual
         return posiciones_bloqueadas
 
     def unlock_casillas(self, lista_pos):
         for pos in lista_pos:
             self.matriz[pos[0]][pos[1]].estado.release()
 
-    def casillas_sin_vehiculos(self, lista_pos, boole=True):
+    def casillas_sin_vehiculos(self, lista_pos):
         res = []
         for pos in lista_pos:
             if self.matriz[pos[0]][pos[1]].vehiculo is None:
                 res.append(pos)
-        # el primer elemento en la lista es la posicion actual y por lo tanto es una pos valida
-        # este metodo solo lo llaman los vehiculos asi que no ocasionaría ninguna repeticion lo siguiente
-        if boole:
-            # es false en caso de que la lista introducida no provenga de lock_alrededor
-            res.append(lista_pos[0])
+        res.append(lista_pos[0])    # el resultado que nos llegue tendrá en la pos[0] a si mismo
         return res
