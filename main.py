@@ -124,7 +124,10 @@ def ciclo_autobus(autobus):
         else:
             pos_bloqueadas = entorno.lock_alrededor(autobus.posicion)
             pos_disp = entorno.casillas_sin_vehiculos(pos_bloqueadas)
-            rand_index = randint(0, len(pos_disp) - 1)
+            if len(pos_disp) == 1:
+                rand_index = 0
+            else:
+                rand_index = randint(0, len(pos_disp) - 1)
             entorno.insertar_elemento(autobus, pos_disp[rand_index])
 
             # cada 3 movimientos habrá una parada
@@ -188,8 +191,6 @@ def ciclo_taxi(taxi):
             if taxi.cliente is None:
                 if len(pos_disp) == 1:
                     rand_index = 0
-                if len(pos_disp) <= 0:
-                    raise Exception("problema con casillas_sin_vehiculos o lock_alrededor")
                 else:
                     rand_index = randint(0, len(pos_disp) - 1)
                 code = entorno.insertar_elemento(taxi, pos_disp[rand_index])
