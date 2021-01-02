@@ -1,15 +1,15 @@
 from clases import *
 from random import randint
 from time import sleep
-import numpy as np
 from threading import *
+from entorno import Entorno
 import sys
+
 
 entorno = Entorno()
 n_clientes = 0
 print_lock = Lock()
 nclientes_lock = Lock()
-threads = []
 
 autobus_gana = False
 taxi_gana = False
@@ -98,9 +98,9 @@ def ciclo_autobus(autobus):
                     entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.release()
                     pos_posibles = None
 
-            entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.release()
             imprimir(["Colocacion autobus: ID= ", autobus.id, "  POS= ", autobus.posicion, " CLIENTES= ",
                       autobus.obtener_clientes(), "cont=", cont])
+            entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.release()
         else:
             pos_bloqueadas = entorno.lock_alrededor(autobus.posicion)
             pos_disp = entorno.casillas_sin_vehiculos(pos_bloqueadas)
@@ -110,8 +110,7 @@ def ciclo_autobus(autobus):
                 rand_index = randint(0, len(pos_disp) - 1)
             entorno.insertar_elemento(autobus, pos_disp[rand_index])
 
-            # cada 3 movimientos habrá una parada
-            if cont % 3 == 0:
+            if cont % 3 == 0:   # cada 3 mov una parada
                 list_clientes = autobus.realizar_parada(entorno)
                 autobus.parado = True
 
@@ -190,7 +189,6 @@ def ciclo_taxi(taxi):
 
 
 if __name__ == "__main__":
-    # El número de clientes disponibles, de autobuses y de taxistas debe ser configurable al comenzar el juego.
     n_clientes = int(input("Introducir número de clientes: \n"))
     n_autobuses = int(input("Introducir número de autobuses: \n"))
     n_taxistas = int(input("Introducir número de taxistas: \n"))
@@ -217,7 +215,6 @@ if __name__ == "__main__":
         t = Thread(target=targ, args=(elemento,))
         t.daemon = True
         t.start()
-        threads.append(t)
 
     while True:
         if autobus_gana:
