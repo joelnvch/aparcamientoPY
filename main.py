@@ -3,18 +3,15 @@ from random import randint
 from time import sleep
 from threading import *
 from entorno import Entorno
-import sys
+import os
 
-N_AUTOBUS_GANA = 4  # clientes necesarios para que
-N_TAXI_GANA = 1  # gane uno u otro
+N_AUTOBUS_GANA = 4      # clientes necesarios para que
+N_TAXI_GANA = 5         #      gane uno u otro
 
 entorno = Entorno()
 n_clientes = 0
 print_lock = Lock()
 nclientes_lock = Lock()
-
-autobus_gana = False
-taxi_gana = False
 
 
 def imprimir(string):
@@ -25,7 +22,7 @@ def imprimir(string):
     print_lock.release()
 
 
-def ciclo_cliente(cliente, result="_"):
+def ciclo_cliente(cliente):
     global entorno, n_clientes
 
     primera_iteracion = True
@@ -69,39 +66,37 @@ def ciclo_cliente(cliente, result="_"):
         sleep(4)
 
 
-def ciclo_autobus(autobus, result):
+def ciclo_autobus(autobus):
     global entorno
     primera_iteracion = True
     cont = 0
-
     while True:
         cont = cont + 1
 
-        if len(autobus.clientes) == N_AUTOBUS_GANA:
+        if len(autobus.clientes) == N_AUTOBUS_GANA:  # estado[4] contiene los clientes del autobus
             print_lock.acquire()
             print("AUTOBUS GANA")
-            sys.exit()
+            os._exit(1)
 
         if primera_iteracion:
             primera_iteracion = False
-
-            pos_posibles = None
-            while pos_posibles is None:
-                try:
-                    pos_posibles = [[0, 0], [0, DIMENSION_MATRIZ - 1], [DIMENSION_MATRIZ - 1, 0],
-                                    [DIMENSION_MATRIZ - 1, DIMENSION_MATRIZ - 1]]
-                    pos_bloqueadas = pos_posibles[randint(0, 3)]
-                    while entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].vehiculo is not None:
-                        pass
-                    entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.acquire()
-                    entorno.insertar_elemento(autobus, pos_bloqueadas)
-                except VehiculoException:
-                    entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.release()
-                    pos_posibles = None
-
-            imprimir(["Colocacion autobus: ID= ", autobus.id, "  POS= ", autobus.posicion, " CLIENTES= ",
-                      autobus.obtener_clientes(), "cont=", cont])
-            entorno.matriz[pos_bloqueadas[0]][pos_bloqueadas[1]].estado.release()
+            pos_posibles = [[0, 0], [0, DIMENSION_MATRIZ - 1], [DIMENSION_MATRIZ - 1, 0],
+                            [DIMENSION_MATRIZ - 1, DIMENSION_MATRIZ - 1]]
+            pos_disp = []
+            while not pos_disp:
+                pos_bloqueadas = entorno.lock_posiciones(pos_posibles)
+                pos_disp = entorno.casillas_sin_vehiculos(pos_bloqueadas, False)
+                if len(pos_disp) == 0:
+                    entorno.unlock_casillas(pos_bloqueadas)
+                    sleep(0.2)
+                else:
+                    if len(pos_disp) == 1:
+                        entorno.insertar_elemento(autobus, pos_disp[0])
+                    else:
+                        entorno.insertar_elemento(autobus, pos_disp[randint(0, len(pos_disp) - 1)])
+                    imprimir(["Colocacion autobus: ID= ", autobus.id, "  POS= ", autobus.posicion, " CLIENTES= ",
+                              autobus.obtener_clientes(), "cont=", cont])
+                    entorno.unlock_casillas(pos_bloqueadas)
         else:
             pos_bloqueadas = entorno.lock_alrededor(autobus.posicion)
             pos_disp = entorno.casillas_sin_vehiculos(pos_bloqueadas)
@@ -110,22 +105,17 @@ def ciclo_autobus(autobus, result):
             else:
                 rand_index = randint(0, len(pos_disp) - 1)
             entorno.insertar_elemento(autobus, pos_disp[rand_index])
-
-            if cont % 3 == 0:  # cada 3 mov una parada
+            if cont % 3 == 0:   # cada 3 mov una parada
                 list_clientes = autobus.realizar_parada(entorno)
                 autobus.parado = True
-
                 print_lock.acquire()
-                print("AUTOBUS se mueve y PARA: ID=", autobus.id, " POS= ", autobus.posicion, "PASAJEROS= ",
-                      autobus.obtener_clientes(), " cont", cont)
+                print("AUTOBUS se mueve y PARA: ID=", autobus.id, " POS= ", autobus.posicion, "PASAJEROS= ", autobus.obtener_clientes(), " cont", cont)
                 for cliente in list_clientes:
                     print("PASAJERO FUERA: ClienteID= ", cliente.id, "  AutobusDejado= ", autobus.id, "  Posicion= ",
                           cliente.posicion,
                           "  pasajero?: ", cliente.pasajero)
                 print_lock.release()
-
                 entorno.unlock_casillas(pos_bloqueadas)
-
                 sleep(1.5)
                 autobus.parado = False
             else:
@@ -133,7 +123,7 @@ def ciclo_autobus(autobus, result):
                 sleep(2)
 
 
-def ciclo_taxi(taxi, result):
+def ciclo_taxi(taxi):
     global entorno
     primera_iteracion = True
     n_clientes_transportados = 0
@@ -142,32 +132,32 @@ def ciclo_taxi(taxi, result):
         if n_clientes_transportados == N_TAXI_GANA:
             print_lock.acquire()
             print("TAXI GANA")
-            sys.exit()
+            os._exit(1)
 
         # Ponerlo en la matriz
         if primera_iteracion:
             primera_iteracion = False
-
-            pos = None
-            while pos is None:
-                try:
-                    pos = [randint(0, DIMENSION_MATRIZ - 1), randint(0, DIMENSION_MATRIZ - 1)]
-                    while entorno.matriz[pos[0]][pos[1]].vehiculo is not None:
-                        pass
-                    entorno.matriz[pos[0]][pos[1]].estado.acquire()
-                    entorno.insertar_elemento(taxi, pos)
-                except VehiculoException:
-                    entorno.matriz[pos[0]][pos[1]].estado.release()
-                    pos = None
-
-            imprimir(["Colocacion Taxi: ID= ", taxi.id, "  POS= ", taxi.posicion, "  CLIENTEisNone?= ",
-                      taxi.cliente is None])
-            entorno.matriz[pos[0]][pos[1]].estado.release()
-
+            pos_posibles = [[randint(0, DIMENSION_MATRIZ - 1), randint(0, DIMENSION_MATRIZ - 1)],
+                            [randint(0, DIMENSION_MATRIZ - 1), randint(0, DIMENSION_MATRIZ - 1)],
+                            [randint(0, DIMENSION_MATRIZ - 1), randint(0, DIMENSION_MATRIZ - 1)]]
+            pos_disp = []
+            while not pos_disp:
+                pos_bloqueadas = entorno.lock_posiciones(pos_posibles)
+                pos_disp = entorno.casillas_sin_vehiculos(pos_bloqueadas, False)
+                if len(pos_disp) == 0:
+                    entorno.unlock_casillas(pos_bloqueadas)
+                    sleep(0.2)
+                else:
+                    if len(pos_disp) == 1:
+                        entorno.insertar_elemento(taxi, pos_disp[0])
+                    else:
+                        entorno.insertar_elemento(taxi, pos_disp[randint(0, len(pos_disp) - 1)])
+                    imprimir(["Colocacion Taxi: ID= ", taxi.id, "  POS= ", taxi.posicion, "  CLIENTE= ",
+                              taxi.get_cliente()])
+                    entorno.unlock_casillas(pos_bloqueadas)
         else:
             pos_bloqueadas = entorno.lock_alrededor(taxi.posicion)
             pos_disp = entorno.casillas_sin_vehiculos(pos_bloqueadas)
-
             if taxi.cliente is None:
                 if len(pos_disp) == 1:
                     rand_index = 0
@@ -185,7 +175,6 @@ def ciclo_taxi(taxi, result):
             print_lock.release()
 
             entorno.unlock_casillas(pos_bloqueadas)
-
         sleep(1)
 
 
@@ -194,7 +183,6 @@ if __name__ == "__main__":
     n_autobuses = int(input("Introducir número de autobuses: \n"))
     n_taxistas = int(input("Introducir número de taxistas: \n"))
     print()
-
     elementos_set = set()
     for i in range(1, n_clientes + 1):
         elementos_set.add(Cliente(i))
@@ -202,21 +190,15 @@ if __name__ == "__main__":
         elementos_set.add(Autobus(i))
     for i in range(1, n_taxistas + 1):
         elementos_set.add(Taxi(i))
-
-    threads = []
-    resultado = "_"
     for elemento in elementos_set:
         targ = None
-
         if isinstance(elemento, Cliente):
             targ = ciclo_cliente
         elif isinstance(elemento, Autobus):
             targ = ciclo_autobus
         elif isinstance(elemento, Taxi):
             targ = ciclo_taxi
-
-        t = Thread(target=targ, args=(elemento, resultado))
-        t.daemon = True
+        t = Thread(target=targ, args=(elemento,))
         t.start()
-        threads.append(t)
+
 

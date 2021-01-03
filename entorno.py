@@ -43,7 +43,7 @@ class Entorno:
                     if vehiculo.parado:
                         vehiculo.clientes.append(elemento)
                         elemento.pasajero = True
-                        return ["autobus", vehiculo.id, vehiculo.posicion, vehiculo.parado]
+                        return ["autobus", vehiculo.id, vehiculo.posicion, vehiculo.parado, vehiculo.clientes]
                     else:
                         casilla_dest.clientes.append(elemento)
 
@@ -100,10 +100,21 @@ class Entorno:
         for pos in lista_pos:
             self.matriz[pos[0]][pos[1]].estado.release()
 
-    def casillas_sin_vehiculos(self, lista_pos):
+    def casillas_sin_vehiculos(self, lista_pos, aux=True):
         res = []
         for pos in lista_pos:
             if self.matriz[pos[0]][pos[1]].vehiculo is None:
                 res.append(pos)
-        res.append(lista_pos[0])  # el resultado que nos llegue tendrá en la pos[0] a si mismo
+        if aux:
+            res.append(lista_pos[0])  # el resultado que nos llegue tendrá en la pos[0] a si mismo
+        return res
+
+    def lock_posiciones(self, pos_posibles):
+        res = []
+        for pos in pos_posibles:
+            casilla = self.matriz[pos[0]][pos[1]]
+            if not casilla.estado.locked():
+                casilla.estado.acquire()
+                res.append(pos)
+
         return res
