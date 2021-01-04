@@ -22,11 +22,11 @@ class Casilla:
 
 class Juego:
     DIMENSION_MATRIZ = 4
+
     N_AUTOBUS_GANA = 4  # clientes necesarios para que
     N_TAXI_GANA = 4 # gane uno u otro
-    n_clientes = 0
+
     print_lock = Lock()
-    nclientes_lock = Lock()
 
     def __init__(self):
         self.matriz = numpy.full((self.DIMENSION_MATRIZ, self.DIMENSION_MATRIZ), None)

@@ -44,56 +44,56 @@ class Taxi:
 
         return pos_resultado
 
+    def ciclo_taxi(self, juego):
+        primera_iteracion = True
+        n_clientes_transportados = 0
 
-def ciclo_taxi(taxi, juego):
-    primera_iteracion = True
-    n_clientes_transportados = 0
+        while True:
+            if n_clientes_transportados == juego.N_TAXI_GANA:
+                juego.print_lock.acquire()
+                print("TAXI GANA")
+                os._exit(1)
 
-    while True:
-        if n_clientes_transportados == juego.N_TAXI_GANA:
-            juego.print_lock.acquire()
-            print("TAXI GANA")
-            os._exit(1)
-
-        # Ponerlo en la matriz
-        if primera_iteracion:
-            primera_iteracion = False
-            pos_posibles = [[randint(0, juego.DIMENSION_MATRIZ - 1), randint(0, juego.DIMENSION_MATRIZ - 1)],
-                            [randint(0, juego.DIMENSION_MATRIZ - 1), randint(0, juego.DIMENSION_MATRIZ - 1)],
-                            [randint(0, juego.DIMENSION_MATRIZ - 1), randint(0, juego.DIMENSION_MATRIZ - 1)]]
-            pos_disp = []
-            while not pos_disp:
-                pos_bloqueadas = juego.lock_posiciones(pos_posibles)
-                pos_disp = juego.casillas_sin_vehiculos(pos_bloqueadas, False)
-                if len(pos_disp) == 0:
-                    juego.unlock_casillas(pos_bloqueadas)
-                    sleep(0.2)
-                else:
-                    if len(pos_disp) == 1:
-                        juego.insertar_elemento(taxi, pos_disp[0])
+            # Ponerlo en la matriz
+            if primera_iteracion:
+                primera_iteracion = False
+                pos_posibles = [[randint(0, juego.DIMENSION_MATRIZ - 1), randint(0, juego.DIMENSION_MATRIZ - 1)],
+                                [randint(0, juego.DIMENSION_MATRIZ - 1), randint(0, juego.DIMENSION_MATRIZ - 1)],
+                                [randint(0, juego.DIMENSION_MATRIZ - 1), randint(0, juego.DIMENSION_MATRIZ - 1)]]
+                pos_disp = []
+                while not pos_disp:
+                    pos_bloqueadas = juego.lock_posiciones(pos_posibles)
+                    pos_disp = juego.casillas_sin_vehiculos(pos_bloqueadas, False)
+                    if len(pos_disp) == 0:
+                        juego.unlock_casillas(pos_bloqueadas)
+                        sleep(0.2)
                     else:
-                        juego.insertar_elemento(taxi, pos_disp[randint(0, len(pos_disp) - 1)])
-                    juego.imprimir(["Colocacion Taxi: ID= ", taxi.id, "  POS= ", taxi.posicion, "  CLIENTE= ",
-                                    taxi.get_cliente()])
-                    juego.unlock_casillas(pos_bloqueadas)
-        else:
-            pos_bloqueadas = juego.lock_alrededor(taxi.posicion)
-            pos_disp = juego.casillas_sin_vehiculos(pos_bloqueadas)
-            if taxi.cliente is None:
-                if len(pos_disp) == 1:
-                    rand_index = 0
-                else:
-                    rand_index = randint(0, len(pos_disp) - 1)
-                code = juego.insertar_elemento(taxi, pos_disp[rand_index])
+                        if len(pos_disp) == 1:
+                            juego.insertar_elemento(self, pos_disp[0])
+                        else:
+                            juego.insertar_elemento(self, pos_disp[randint(0, len(pos_disp) - 1)])
+                        juego.imprimir(["Colocacion Taxi: ID= ", self.id, "  POS= ", self.posicion, "  CLIENTE= ",
+                                        self.get_cliente()])
+                        juego.unlock_casillas(pos_bloqueadas)
             else:
-                pos = taxi.decidir_mov(pos_disp, juego)
-                code = juego.insertar_elemento(taxi, pos)
+                pos_bloqueadas = juego.lock_alrededor(self.posicion)
+                pos_disp = juego.casillas_sin_vehiculos(pos_bloqueadas)
+                if self.cliente is None:
+                    if len(pos_disp) == 1:
+                        rand_index = 0
+                    else:
+                        rand_index = randint(0, len(pos_disp) - 1)
+                    code = juego.insertar_elemento(self, pos_disp[rand_index])
+                else:
+                    pos = self.decidir_mov(pos_disp, juego)
+                    code = juego.insertar_elemento(self, pos)
 
-            juego.print_lock.acquire()
-            if code[0] == "paradaTaxi":
-                print("TAXI se mueve y PARA: ID= ", taxi.id, " POS=", taxi.posicion, " {Cliente ", code[1], " se baja}")
-                n_clientes_transportados = n_clientes_transportados + 1
-            juego.print_lock.release()
+                juego.print_lock.acquire()
+                if code[0] == "paradaTaxi":
+                    print("TAXI se mueve y PARA: ID= ", self.id, " POS=", self.posicion, " {Cliente ", code[1],
+                          " se baja}")
+                    n_clientes_transportados = n_clientes_transportados + 1
+                juego.print_lock.release()
 
-            juego.unlock_casillas(pos_bloqueadas)
-        sleep(1)
+                juego.unlock_casillas(pos_bloqueadas)
+            sleep(1)

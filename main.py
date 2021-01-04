@@ -1,9 +1,9 @@
-from autobus import Autobus, ciclo_autobus
+from autobus import Autobus
 from threading import *
-from cliente import Cliente, ciclo_cliente
+from cliente import Cliente
 from juego import Juego
 
-from taxi import Taxi, ciclo_taxi
+from taxi import Taxi
 
 if __name__ == "__main__":
     n_clientes = int(input("Introducir número de clientes: \n"))
@@ -24,11 +24,11 @@ if __name__ == "__main__":
     for elemento in elementos_set:
         targ = None
         if isinstance(elemento, Cliente):
-            targ = ciclo_cliente
+            targ = Cliente.ciclo_cliente
         elif isinstance(elemento, Autobus):
-            targ = ciclo_autobus
+            targ = Autobus.ciclo_autobus
         elif isinstance(elemento, Taxi):
-            targ = ciclo_taxi
+            targ = Taxi.ciclo_taxi
 
         t = Thread(target=targ, args=(elemento, juego))
         t.start()
