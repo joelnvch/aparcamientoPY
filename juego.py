@@ -1,13 +1,37 @@
+import threading
+from threading import Lock
+
 import numpy
+from autobus import Autobus
+from cliente import Cliente
+from taxi import Taxi
 
-from clases import *
+
+class VehiculoException(Exception):
+    def __init__(self, msg):
+        super().__init__(msg)
 
 
-class Entorno:
+class Casilla:
+    def __init__(self, id):
+        self.id = id
+        self.estado = threading.Lock()
+        self.vehiculo = None
+        self.clientes = []
+
+
+class Juego:
+    DIMENSION_MATRIZ = 4
+    N_AUTOBUS_GANA = 4  # clientes necesarios para que
+    N_TAXI_GANA = 4 # gane uno u otro
+    n_clientes = 0
+    print_lock = Lock()
+    nclientes_lock = Lock()
+
     def __init__(self):
-        self.matriz = numpy.full((DIMENSION_MATRIZ, DIMENSION_MATRIZ), None)
-        for i in range(0, DIMENSION_MATRIZ):
-            for j in range(0, DIMENSION_MATRIZ):
+        self.matriz = numpy.full((self.DIMENSION_MATRIZ, self.DIMENSION_MATRIZ), None)
+        for i in range(0, self.DIMENSION_MATRIZ):
+            for j in range(0, self.DIMENSION_MATRIZ):
                 self.matriz[i][j] = Casilla([i, j])
 
     def insertar_elemento(self, elemento, pos_nueva):
@@ -77,9 +101,9 @@ class Entorno:
     def __casillas_contiguas(self, pos):
         res = []
         for i in range(pos[0] - 1, pos[0] + 2):
-            if 0 <= i <= DIMENSION_MATRIZ - 1:
+            if 0 <= i <= self.DIMENSION_MATRIZ - 1:
                 for j in range(pos[1] - 1, pos[1] + 2):
-                    if 0 <= j <= DIMENSION_MATRIZ - 1:
+                    if 0 <= j <= self.DIMENSION_MATRIZ - 1:
                         res.append(self.matriz[i][j])
         # la posicion actual la tenemos en el argumento pos, el resto de posiciones en res
         res.remove(self.matriz[pos[0]][pos[1]])
@@ -118,3 +142,10 @@ class Entorno:
                 res.append(pos)
 
         return res
+
+    def imprimir(self, string):
+        self.print_lock.acquire()
+        for palabra in string:
+            print(palabra, end="")
+        print()
+        self.print_lock.release()
