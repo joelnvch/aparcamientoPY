@@ -32,13 +32,13 @@ class Autobus:
     def ciclo_autobus(self, juego):
         primera_iteracion = True
         cont = 0
-        while True:
+
+        while not juego.elemento_ganador:
             cont = cont + 1
 
             if len(self.clientes) == juego.N_AUTOBUS_GANA:  # estado[4] contiene los clientes del autobus
-                juego.print_lock.acquire()
-                print("AUTOBUS GANA")
-                os._exit(1)
+                juego.elemento_ganador = "AUTOBUS"
+                break
 
             if primera_iteracion:
                 primera_iteracion = False

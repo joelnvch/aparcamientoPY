@@ -21,6 +21,8 @@ class Casilla:
 
 
 class Juego:
+    elemento_ganador = ""
+
     DIMENSION_MATRIZ = 4
 
     N_AUTOBUS_GANA = 4  # clientes necesarios para que

@@ -21,6 +21,7 @@ if __name__ == "__main__":
     for i in range(1, n_taxistas + 1):
         elementos_set.add(Taxi(i))
 
+    threads = []
     for elemento in elementos_set:
         targ = None
         if isinstance(elemento, Cliente):
@@ -32,5 +33,12 @@ if __name__ == "__main__":
 
         t = Thread(target=targ, args=(elemento, juego))
         t.start()
+        threads.append(t)
+
+    for t in threads:
+        t.join()
+
+    print(juego.elemento_ganador + " GANA")
+
 
 

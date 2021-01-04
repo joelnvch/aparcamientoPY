@@ -48,11 +48,10 @@ class Taxi:
         primera_iteracion = True
         n_clientes_transportados = 0
 
-        while True:
+        while not juego.elemento_ganador:
             if n_clientes_transportados == juego.N_TAXI_GANA:
-                juego.print_lock.acquire()
-                print("TAXI GANA")
-                os._exit(1)
+                juego.elemento_ganador = "TAXI"
+                break
 
             # Ponerlo en la matriz
             if primera_iteracion:
