@@ -69,8 +69,6 @@ class Juego:
         else:
             if casilla_dest.vehiculo == elemento:
                 return [""]
-            elif casilla_dest.vehiculo is not None:
-                raise Exception("Un vehiculo ha intentado entrar en una casilla con otro")
 
             if pos_antigua:
                 self.matriz[pos_antigua[0]][pos_antigua[1]].vehiculo = None
