@@ -1,40 +1,32 @@
 import threading
 from threading import Lock
-
 import numpy
 from autobus import Autobus
 from cliente import Cliente
 from taxi import Taxi
 
 
-class VehiculoException(Exception):
-    def __init__(self, msg):
-        super().__init__(msg)
-
-
-class Casilla:
-    def __init__(self, id):
-        self.id = id
-        self.estado = threading.Lock()
-        self.vehiculo = None
-        self.clientes = []
-
-
 class Juego:
     elemento_ganador = ""
 
     DIMENSION_MATRIZ = 4
-
     N_AUTOBUS_GANA = 4  # clientes necesarios para que
     N_TAXI_GANA = 6 # gane uno u otro
 
     print_lock = Lock()
 
+    class Casilla:
+        def __init__(self, id):
+            self.id = id
+            self.estado = threading.Lock()
+            self.vehiculo = None
+            self.clientes = []
+
     def __init__(self):
         self.matriz = numpy.full((self.DIMENSION_MATRIZ, self.DIMENSION_MATRIZ), None)
         for i in range(0, self.DIMENSION_MATRIZ):
             for j in range(0, self.DIMENSION_MATRIZ):
-                self.matriz[i][j] = Casilla([i, j])
+                self.matriz[i][j] = self.Casilla([i, j])
 
     def insertar_elemento(self, elemento, pos_nueva):
         casilla_dest = self.matriz[pos_nueva[0]][pos_nueva[1]]
@@ -78,7 +70,7 @@ class Juego:
             if casilla_dest.vehiculo == elemento:
                 return [""]
             elif casilla_dest.vehiculo is not None:
-                raise VehiculoException("Un vehiculo ha intentado entrar en una casilla con otro")
+                raise Exception("Un vehiculo ha intentado entrar en una casilla con otro")
 
             if pos_antigua:
                 self.matriz[pos_antigua[0]][pos_antigua[1]].vehiculo = None
