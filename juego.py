@@ -1,89 +1,15 @@
-from random import randint
 import threading
-import numpy
+from threading import Lock
 
-DIMENSION_MATRIZ = 4
+import numpy
+from autobus import Autobus
+from cliente import Cliente
+from taxi import Taxi
 
 
 class VehiculoException(Exception):
     def __init__(self, msg):
         super().__init__(msg)
-
-
-class Cliente:
-    def __init__(self, id):
-        self.id = id
-        self.destino = [randint(0, DIMENSION_MATRIZ - 1), randint(0, DIMENSION_MATRIZ - 1)]
-        self.posicion = []
-        self.pasajero = False
-
-
-class Taxi:
-    def __init__(self, id):
-        self.id = id
-        self.cliente = None
-        self.posicion = []
-
-    def decidir_mov(self, lista_pos, entorno):
-        if self.cliente is None:
-            raise Exception("Taxi error no deberia estar aqui")
-
-        direccion_columna = self.cliente.destino[1] - self.posicion[1]
-        direccion_fila = self.cliente.destino[0] - self.posicion[0]
-        pos_resultado = []
-
-        if (abs(direccion_fila) == 1 or abs(direccion_fila) == 0) and (
-                abs(direccion_columna) == 1 or abs(direccion_columna) == 0):
-            if entorno.matriz[self.cliente.destino[0]][self.cliente.destino[1]].vehiculo is None:
-                pos_resultado = self.cliente.destino
-                self.cliente.pasajero = False
-            else:
-                pos_resultado = self.posicion
-        else:
-            pos_resultado = lista_pos[0]
-            dist_columna = self.cliente.destino[0] - pos_resultado[0]
-            dist_fila = self.cliente.destino[1] - pos_resultado[1]
-            dist_destino = numpy.linalg.norm([dist_fila, dist_columna])
-
-            for posicion in lista_pos:
-                dist_columna = self.cliente.destino[0] - posicion[0]
-                dist_fila = self.cliente.destino[1] - posicion[1]
-                dist_destino_aux = numpy.linalg.norm([dist_fila, dist_columna])
-                if dist_destino_aux < dist_destino:
-                    pos_resultado = posicion
-                    dist_destino = dist_destino_aux
-
-        if not pos_resultado:
-            raise Exception('decidir mov error.')
-
-        return pos_resultado
-
-
-class Autobus:
-    def __init__(self, id):
-        self.id = id
-        self.clientes = []
-        self.posicion = []
-        self.parado = False
-
-    def realizar_parada(self, entorno):
-        lista_clientes_fuera = []
-
-        for cliente in self.clientes:
-            rand = randint(0, 2)
-            if rand == 0:
-                self.clientes.remove(cliente)
-                cliente.pasajero = False
-                entorno.matriz[cliente.posicion[0]][cliente.posicion[1]].clientes.append(cliente)
-                lista_clientes_fuera.append(cliente)
-
-        return lista_clientes_fuera
-
-    def obtener_clientes(self):
-        res = []
-        for cliente in self.clientes:
-            res.append(cliente.id)
-        return res
 
 
 class Casilla:
@@ -94,11 +20,20 @@ class Casilla:
         self.clientes = []
 
 
-class Entorno:
+class Juego:
+    elemento_ganador = ""
+
+    DIMENSION_MATRIZ = 4
+
+    N_AUTOBUS_GANA = 4  # clientes necesarios para que
+    N_TAXI_GANA = 6 # gane uno u otro
+
+    print_lock = Lock()
+
     def __init__(self):
-        self.matriz = numpy.full((DIMENSION_MATRIZ, DIMENSION_MATRIZ), None)
-        for i in range(0, DIMENSION_MATRIZ):
-            for j in range(0, DIMENSION_MATRIZ):
+        self.matriz = numpy.full((self.DIMENSION_MATRIZ, self.DIMENSION_MATRIZ), None)
+        for i in range(0, self.DIMENSION_MATRIZ):
+            for j in range(0, self.DIMENSION_MATRIZ):
                 self.matriz[i][j] = Casilla([i, j])
 
     def insertar_elemento(self, elemento, pos_nueva):
@@ -125,16 +60,16 @@ class Entorno:
                     return [""]
                 elif isinstance(vehiculo, Taxi):
                     if vehiculo.cliente is None:
-                        elemento.pasajero = True
+                        elemento.pasajero.acquire()
                         vehiculo.cliente = elemento
-                        return ["taxi", vehiculo.id, vehiculo.posicion, vehiculo.cliente is None]
+                        return ["taxi", vehiculo.id, vehiculo.posicion, vehiculo.get_cliente()]
                     else:
                         casilla_dest.clientes.append(elemento)
                 elif isinstance(vehiculo, Autobus):
                     if vehiculo.parado:
                         vehiculo.clientes.append(elemento)
-                        elemento.pasajero = True
-                        return ["autobus", vehiculo.id, vehiculo.posicion, vehiculo.parado]
+                        elemento.pasajero.acquire()
+                        return ["autobus", vehiculo.id, vehiculo.posicion, vehiculo.parado, vehiculo.clientes]
                     else:
                         casilla_dest.clientes.append(elemento)
 
@@ -168,9 +103,9 @@ class Entorno:
     def __casillas_contiguas(self, pos):
         res = []
         for i in range(pos[0] - 1, pos[0] + 2):
-            if 0 <= i <= DIMENSION_MATRIZ - 1:
+            if 0 <= i <= self.DIMENSION_MATRIZ - 1:
                 for j in range(pos[1] - 1, pos[1] + 2):
-                    if 0 <= j <= DIMENSION_MATRIZ - 1:
+                    if 0 <= j <= self.DIMENSION_MATRIZ - 1:
                         res.append(self.matriz[i][j])
         # la posicion actual la tenemos en el argumento pos, el resto de posiciones en res
         res.remove(self.matriz[pos[0]][pos[1]])
@@ -179,7 +114,7 @@ class Entorno:
     def lock_alrededor(self, pos):
         casilla_actual = self.matriz[pos[0]][pos[1]]
         posiciones_bloqueadas = []
-        casilla_actual.estado.acquire()     # no empezamos hasta que su posición no este bloqueada
+        casilla_actual.estado.acquire()  # no empezamos hasta que su posición no este bloqueada
         posiciones_bloqueadas.append(casilla_actual.id)
         for casilla in self.__casillas_contiguas(pos):
             if not casilla.estado.locked():
@@ -191,10 +126,28 @@ class Entorno:
         for pos in lista_pos:
             self.matriz[pos[0]][pos[1]].estado.release()
 
-    def casillas_sin_vehiculos(self, lista_pos):
+    def casillas_sin_vehiculos(self, lista_pos, aux=True):
         res = []
         for pos in lista_pos:
             if self.matriz[pos[0]][pos[1]].vehiculo is None:
                 res.append(pos)
-        res.append(lista_pos[0])    # el resultado que nos llegue tendrá en la pos[0] a si mismo
+        if aux:
+            res.append(lista_pos[0])  # el resultado que nos llegue tendrá en la pos[0] a si mismo
         return res
+
+    def lock_posiciones(self, pos_posibles):
+        res = []
+        for pos in pos_posibles:
+            casilla = self.matriz[pos[0]][pos[1]]
+            if not casilla.estado.locked():
+                casilla.estado.acquire()
+                res.append(pos)
+
+        return res
+
+    def imprimir(self, string):
+        self.print_lock.acquire()
+        for palabra in string:
+            print(palabra, end="")
+        print()
+        self.print_lock.release()
