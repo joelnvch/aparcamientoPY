@@ -11,19 +11,18 @@ class Cliente:
         self.id = id
         self.destino = [randint(0, entorno.DIMENSION_MATRIZ - 1), randint(0, entorno.DIMENSION_MATRIZ - 1)]
         self.posicion = []
-        self.pasajero = False
+        self.pasajero = Lock()
 
     def ciclo_cliente(self, juego):
         primera_iteracion = True
-        destino_alcanzado = False
 
-        while not juego.elemento_ganador and not destino_alcanzado:
+        while not juego.elemento_ganador:
             if primera_iteracion:
                 pos_disp = [randint(0, juego.DIMENSION_MATRIZ - 1), randint(0, juego.DIMENSION_MATRIZ - 1)]
                 juego.matriz[pos_disp[0]][pos_disp[1]].estado.acquire()
                 estado = juego.insertar_elemento(self, pos_disp)
                 juego.imprimir(
-                    ["Colocacion cliente: ID=", self.id, " POS=", self.posicion, " PASAJERO?=", self.pasajero])
+                    ["Colocacion cliente: ID=", self.id, " POS=", self.posicion, " PASAJERO?=", self.pasajero.locked()])
             else:
                 pos_disp = juego.lock_alrededor(self.posicion)
                 rand_index = randint(0, len(pos_disp) - 1)
@@ -43,13 +42,12 @@ class Cliente:
             else:
                 juego.unlock_casillas(pos_disp)
 
-            while not juego.elemento_ganador and (self.pasajero or juego.matriz[self.posicion[0]][self.posicion[1]].estado.locked()):
-                pass
+            self.pasajero.acquire()
+            self.pasajero.release()
 
             if not juego.elemento_ganador and self.posicion == self.destino:
                 juego.imprimir(["EXITO Cliente: ID=", self.id, " DEST=", self.destino, " {Cliente llega destino}"])
                 juego.matriz[self.destino[0]][self.destino[1]].clientes.remove(self)
-                destino_alcanzado = True
 
                 self.nclientes_lock.acquire()
                 self.n_clientes = self.n_clientes + 1

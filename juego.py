@@ -26,7 +26,7 @@ class Juego:
     DIMENSION_MATRIZ = 4
 
     N_AUTOBUS_GANA = 4  # clientes necesarios para que
-    N_TAXI_GANA = 4 # gane uno u otro
+    N_TAXI_GANA = 6 # gane uno u otro
 
     print_lock = Lock()
 
@@ -60,7 +60,7 @@ class Juego:
                     return [""]
                 elif isinstance(vehiculo, Taxi):
                     if vehiculo.cliente is None:
-                        elemento.pasajero = True
+                        elemento.pasajero.acquire()
                         vehiculo.cliente = elemento
                         return ["taxi", vehiculo.id, vehiculo.posicion, vehiculo.get_cliente()]
                     else:
@@ -68,7 +68,7 @@ class Juego:
                 elif isinstance(vehiculo, Autobus):
                     if vehiculo.parado:
                         vehiculo.clientes.append(elemento)
-                        elemento.pasajero = True
+                        elemento.pasajero.acquire()
                         return ["autobus", vehiculo.id, vehiculo.posicion, vehiculo.parado, vehiculo.clientes]
                     else:
                         casilla_dest.clientes.append(elemento)

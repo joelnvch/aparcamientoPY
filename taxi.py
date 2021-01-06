@@ -25,7 +25,7 @@ class Taxi:
                 abs(direccion_columna) == 1 or abs(direccion_columna) == 0):
             if juego.matriz[self.cliente.destino[0]][self.cliente.destino[1]].vehiculo is None:
                 pos_resultado = self.cliente.destino
-                self.cliente.pasajero = False
+                self.cliente.pasajero.release()
             else:
                 pos_resultado = self.posicion
         else:
@@ -96,3 +96,6 @@ class Taxi:
 
                 juego.unlock_casillas(pos_bloqueadas)
             sleep(1)
+
+        if self.cliente is not None and self.cliente.pasajero.locked():
+            self.cliente.pasajero.release()

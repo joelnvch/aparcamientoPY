@@ -16,7 +16,7 @@ class Autobus:
             rand = randint(0, 2)
             if rand == 0:
                 self.clientes.remove(cliente)
-                cliente.pasajero = False
+                cliente.pasajero.release()
                 entorno.matriz[cliente.posicion[0]][cliente.posicion[1]].clientes.append(cliente)
                 lista_clientes_fuera.append(cliente)
 
@@ -75,7 +75,7 @@ class Autobus:
                     for cliente in list_clientes:
                         print("PASAJERO FUERA: ClienteID= ", cliente.id, "  AutobusDejado= ", self.id, "  Posicion= ",
                               cliente.posicion,
-                              "  pasajero?: ", cliente.pasajero)
+                              "  pasajero?: ", cliente.pasajero.locked())
                     juego.print_lock.release()
                     juego.unlock_casillas(pos_bloqueadas)
                     sleep(1.5)
@@ -83,3 +83,7 @@ class Autobus:
                 else:
                     juego.unlock_casillas(pos_bloqueadas)
                     sleep(2)
+
+        for cliente in self.clientes:
+            if cliente.pasajero.locked():
+                cliente.pasajero.release()
