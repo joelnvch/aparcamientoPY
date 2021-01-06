@@ -8,4 +8,4 @@ Funcionalidad básica	[X]
 	
 		Condiciones finalización juego/cambio funcionldads	 RELEASE_03 [X]
 		
-		Limpiar código/reorganizar                               RELEASE_04 [X]
+		Limpiar código                                           RELEASE_04 [X]
